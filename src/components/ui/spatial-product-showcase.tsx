@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { motion, AnimatePresence, Variants, useReducedMotion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
   Battery,
@@ -145,40 +145,49 @@ const ANIMATIONS = {
   }),
 };
 
-const BackgroundGradient = ({ isLeft }: { isLeft: boolean }) => (
+const BackgroundGradient = ({ isLeft }: { isLeft: boolean }) => {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
   <div className="absolute inset-0 pointer-events-none">
     <motion.div
-      animate={{
-        background: isLeft
-          ? 'radial-gradient(circle at 0% 50%, rgba(239,68,68,0.16), transparent 50%)'
-          : 'radial-gradient(circle at 100% 50%, rgba(255,255,255,0.11), transparent 50%)',
-      }}
-      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      animate={
+        shouldReduceMotion
+          ? undefined
+          : {
+              background: isLeft
+                ? 'radial-gradient(circle at 0% 50%, rgba(239,68,68,0.16), transparent 50%)'
+                : 'radial-gradient(circle at 100% 50%, rgba(255,255,255,0.11), transparent 50%)',
+            }
+      }
+      transition={shouldReduceMotion ? undefined : { duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
       className="absolute inset-0"
     />
   </div>
-);
+  );
+};
 
 const ProductVisual = ({ data, isLeft }: { data: ProductData; isLeft: boolean }) => {
   const { t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div layout="position" className="relative group shrink-0">
       <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+        animate={shouldReduceMotion ? undefined : { rotate: 360 }}
+        transition={shouldReduceMotion ? undefined : { duration: 24, repeat: Infinity, ease: 'linear' }}
         className={`absolute inset-[-20%] rounded-full border border-dashed border-white/10 ${data.colors.ring}`}
       />
       <motion.div
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        animate={shouldReduceMotion ? undefined : { scale: [1, 1.05, 1] }}
+        transition={shouldReduceMotion ? undefined : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
         className={`absolute inset-0 rounded-full bg-gradient-to-br ${data.colors.gradient} blur-2xl opacity-40`}
       />
 
       <div className="relative h-80 w-80 md:h-[450px] md:w-[450px] rounded-full border border-white/5 shadow-2xl flex items-center justify-center overflow-hidden bg-black/20 backdrop-blur-sm">
         <motion.div
-          animate={{ y: [-5, 5, -5] }}
-          transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
+          animate={shouldReduceMotion ? undefined : { y: [-5, 5, -5] }}
+          transition={shouldReduceMotion ? undefined : { repeat: Infinity, duration: 6, ease: 'easeInOut' }}
           className="relative z-10 w-full h-full flex items-center justify-center p-8"
         >
           <AnimatePresence mode="wait">
@@ -446,7 +455,7 @@ const Switcher = ({
   const options = Object.values(PRODUCT_DATA).map((product) => ({ id: product.id, label: product.label }));
 
   return (
-    <div className="absolute top-8 md:bottom-12 md:top-auto inset-x-0 flex justify-center z-50 pointer-events-none">
+    <div className="absolute top-12 md:bottom-12 md:top-auto inset-x-0 flex justify-center z-50 pointer-events-none">
       <motion.div layout className="pointer-events-auto flex items-center gap-1 p-1.5 rounded-full bg-zinc-900/80 backdrop-blur-2xl border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.6)] ring-1 ring-white/5">
         {options.map((option) => (
           <motion.button
@@ -481,6 +490,7 @@ const Switcher = ({
 
 export default function SpatialProductShowcase() {
   const [activeSide, setActiveSide] = useState<ProductId>('left');
+  const shouldReduceMotion = useReducedMotion();
 
   const currentData = useMemo(() => PRODUCT_DATA[activeSide], [activeSide]);
   const isLeft = activeSide === 'left';
@@ -491,7 +501,7 @@ export default function SpatialProductShowcase() {
       <div className="relative z-10 w-full px-6 flex flex-col justify-center max-w-7xl mx-auto min-h-[520px] md:min-h-[600px] mt-12 md:mt-0">
         <motion.div
           layout
-          transition={{ type: 'spring', bounce: 0, duration: 0.9 }}
+          transition={shouldReduceMotion ? { duration: 0.2 } : { type: 'spring', bounce: 0, duration: 0.9 }}
           className={`flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 lg:gap-32 w-full pb-8 md:pb-16 ${
             isLeft ? 'md:flex-row' : 'md:flex-row-reverse'
           }`}

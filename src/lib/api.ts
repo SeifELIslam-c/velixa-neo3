@@ -1,6 +1,7 @@
 import { firebaseAuth } from './firebase';
 
-const API_PREFIX = '/api';
+const baseUrl = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '');
+const API_PREFIX = baseUrl ? `${baseUrl}/api` : '/api';
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}) {
   const user = firebaseAuth.currentUser;

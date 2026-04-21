@@ -1,9 +1,9 @@
 'use client';
 
-import { SpiralAnimation } from "@/components/ui/spiral-animation";
 import { useState, useEffect } from 'react';
 import { useStore } from "@/store";
 import { useTranslation } from "react-i18next";
+import { SpiralAnimation } from "@/components/ui/spiral-animation";
 
 interface EntranceScreenProps {
   onEnter: () => void;
@@ -32,14 +32,14 @@ export function EntranceScreen({ onEnter }: EntranceScreenProps) {
   }, []);
   
   return (
-    <div id="entrance-container" className="fixed inset-0 w-full h-full overflow-hidden bg-black z-[100] transition-opacity duration-1000 ease-in-out">
+    <div id="entrance-container" className="fixed inset-0 z-[100] h-full w-full overflow-hidden bg-black transition-opacity duration-1000 ease-in-out">
       <div className="absolute inset-0">
         <SpiralAnimation />
       </div>
-      
+
       <div 
         className={`
-          absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-full px-4 text-center
+          absolute left-1/2 top-[31%] z-10 w-full -translate-x-1/2 -translate-y-1/2 px-4 text-center
           transition-all duration-[1500ms] ease-out
           ${startVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
         `}
@@ -54,7 +54,7 @@ export function EntranceScreen({ onEnter }: EntranceScreenProps) {
 
       <div 
         className={`
-          absolute top-1/2 left-1/2 -translate-x-1/2 mt-[10vh] z-10 flex flex-col md:flex-row gap-6 items-center
+          absolute left-1/2 top-1/2 z-10 mt-[10vh] flex -translate-x-1/2 flex-col items-center gap-4 md:flex-row md:gap-6
           transition-all duration-[1500ms] ease-out delay-500
           ${startVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
         `}

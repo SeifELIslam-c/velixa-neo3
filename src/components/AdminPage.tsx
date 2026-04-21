@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Product, useStore } from "../store";
-import { Menu, X, LayoutDashboard, ShoppingBag, PackageSearch, MessageSquareText, CheckCheck, Trash2, Copy, Sparkles, History, Store } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, LayoutDashboard, ShoppingBag, PackageSearch, MessageSquareText, CheckCheck, Trash2, Copy, Sparkles, History, Store, RefreshCw, BellRing } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { subscribeToOrders, subscribeToSupportTickets } from "@/lib/realtime";
 import { Link } from "react-router-dom";
@@ -226,6 +225,9 @@ export function AdminPage() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isDesktopSidebar, setIsDesktopSidebar] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicketRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
@@ -237,7 +239,11 @@ export function AdminPage() {
   const [orderSourceFilter, setOrderSourceFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
+  const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
   const [localSaleSaving, setLocalSaleSaving] = useState(false);
+  const latestOrderIdRef = useRef<string | null>(null);
+  const latestTicketReplyRef = useRef<string | null>(null);
   const [localSaleForm, setLocalSaleForm] = useState<LocalSaleFormState>({
     productId: "",
     quantity: "1",
@@ -260,12 +266,11 @@ export function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!user?.isAdmin) return;
-
-    apiFetch<{ logs: AuditLogRecord[] }>("/admin/audit-logs")
-      .then((response) => setAuditLogs(Array.isArray(response.logs) ? response.logs : []))
-      .catch(() => undefined);
-  }, [user]);
+    const onResize = () => setIsDesktopSidebar(window.innerWidth >= 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     if (!adminNotice) return;
@@ -284,11 +289,84 @@ export function AdminPage() {
     }));
   }, [localSaleForm.productId, localSaleForm.unitPrice, products]);
 
-  const refreshAuditLogs = () => {
+  useEffect(() => {
+    if (!user?.isAdmin || orders.length === 0) return;
+
+    const newestOrderId = orders[0]?.id ?? null;
+    if (!latestOrderIdRef.current) {
+      latestOrderIdRef.current = newestOrderId;
+      return;
+    }
+
+    if (newestOrderId && newestOrderId !== latestOrderIdRef.current) {
+      latestOrderIdRef.current = newestOrderId;
+      setAdminNotice(`New order received: ${newestOrderId}`);
+      refreshAuditLogs({ silent: true });
+    }
+  }, [orders, user]);
+
+  useEffect(() => {
+    if (!user?.isAdmin || supportTickets.length === 0) return;
+
+    const newestTicketKey = `${supportTickets[0]?.id ?? ""}:${supportTickets[0]?.updatedAt ?? ""}`;
+    if (!latestTicketReplyRef.current) {
+      latestTicketReplyRef.current = newestTicketKey;
+      return;
+    }
+
+    if (newestTicketKey !== latestTicketReplyRef.current && supportTickets[0]?.hasUnreadUserReply) {
+      latestTicketReplyRef.current = newestTicketKey;
+      setAdminNotice(`New support reply from ${supportTickets[0]?.customerName ?? "customer"}.`);
+      refreshAuditLogs({ silent: true });
+      return;
+    }
+
+    latestTicketReplyRef.current = newestTicketKey;
+  }, [supportTickets, user]);
+
+  const refreshAuditLogs = (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setIsRefreshingLogs(true);
+    }
+
     apiFetch<{ logs: AuditLogRecord[] }>("/admin/audit-logs")
-      .then((response) => setAuditLogs(Array.isArray(response.logs) ? response.logs : []))
-      .catch(() => undefined);
+      .then((response) => {
+        setAuditLogs(Array.isArray(response.logs) ? response.logs : []);
+        setLastRefreshAt(new Date().toISOString());
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!options?.silent) {
+          setIsRefreshingLogs(false);
+        }
+      });
   };
+
+  useEffect(() => {
+    if (!user?.isAdmin) return;
+    refreshAuditLogs();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user?.isAdmin) return;
+
+    const refresh = () => refreshAuditLogs({ silent: true });
+    const interval = window.setInterval(refresh, 20000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [user]);
 
   const confirmOrder = (orderId: string) => {
     apiFetch(`/orders/${orderId}/status`, {
@@ -558,81 +636,97 @@ export function AdminPage() {
   }
 
   return (
-    <div className="bg-bg-luxe min-h-screen text-white px-3 py-4 md:px-8 md:py-8 font-sans flex">
+    <div className="bg-bg-luxe min-h-screen pb-24 text-white px-3 py-4 md:px-8 md:py-8 font-sans flex">
       <button
         onClick={() => setMenuOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-40 bg-surface-luxe p-3 border border-border-luxe rounded-full shadow-lg"
+        className="md:hidden fixed top-4 left-4 z-40 rounded-full border border-border-luxe bg-surface-luxe p-3 shadow-lg"
       >
         <Menu size={20} />
       </button>
 
-      <AnimatePresence>
-        {(menuOpen || window.innerWidth >= 768) && (
-          <motion.div
-            initial={{ x: -300 }}
-            animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            className={`fixed md:sticky top-0 left-0 h-screen md:h-[calc(100vh-2rem)] w-72 bg-surface-luxe border-r border-border-luxe z-[60] p-6 flex flex-col pt-20 md:pt-6 ${menuOpen ? "block shadow-2xl" : "hidden md:flex"}`}
+      {(menuOpen || isDesktopSidebar) && (
+        <div className={`fixed md:sticky top-0 left-0 h-screen md:h-[calc(100vh-2rem)] w-[18rem] bg-surface-luxe border-r border-border-luxe z-[60] p-5 flex flex-col pt-20 md:pt-6 ${menuOpen ? "block shadow-2xl" : "hidden md:flex"}`}>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="md:hidden absolute top-6 right-6 rounded-full bg-black/50 p-2 text-white/50 hover:text-white"
           >
-            <button
-              onClick={() => setMenuOpen(false)}
-              className="md:hidden absolute top-6 right-6 text-white/50 hover:text-white bg-black/50 p-2 rounded-full"
-            >
-              <X size={24} />
-            </button>
-            <div className="mb-8 border-b border-white/10 pb-4">
-              <p className="text-[11px] uppercase tracking-[0.35em] text-red-300">Velixa Neo</p>
-              <h2 className="mt-3 text-xl font-bold uppercase tracking-widest text-white/80">{t("Admin Panel")}</h2>
-            </div>
-            <div className="flex flex-col gap-2">
-              {menuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setMenuOpen(false);
-                  }}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-widest transition-all ${activeTab === item.id ? "bg-accent-luxe/20 text-accent-luxe border border-accent-luxe/30" : "text-white/50 hover:bg-white/5 hover:text-white"}`}
-                >
-                  <span className="flex items-center gap-3">
-                    {item.icon}
-                    {item.label}
-                  </span>
-                  {item.badge ? (
-                    <span className="relative flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-                    </span>
-                  ) : null}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <X size={24} />
+          </button>
+          <div className="mb-6 border-b border-white/10 pb-4">
+            <p className="text-[11px] uppercase tracking-[0.35em] text-red-300">Velixa Neo</p>
+            <h2 className="mt-3 text-xl font-bold uppercase tracking-widest text-white/80">{t("Admin Panel")}</h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setMenuOpen(false);
+                }}
+                className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm font-bold uppercase tracking-[0.18em] transition-all ${
+                  activeTab === item.id
+                    ? "border border-accent-luxe/30 bg-accent-luxe/20 text-accent-luxe"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  {item.icon}
+                  {item.label}
+                </span>
+                {item.badge ? <span className="inline-flex h-2.5 w-2.5 rounded-full bg-red-500" /> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 w-full max-w-6xl mx-auto md:ml-8 mt-16 md:mt-0">
         <div className="mb-8 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(9,9,9,0.98))] px-5 py-5 md:px-8 md:py-7 shadow-2xl">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-red-300">Velixa Neo</p>
-          <h1 className="mt-3 text-[2rem] md:text-[3rem] font-[800] uppercase tracking-[-2px]">
-            {activeTab === "dashboard" && t("Admin Panel")}
-            {activeTab === "orders" && t("Order Management")}
-            {activeTab === "products" && t("Inventory System")}
-            {activeTab === "support" && t("Support Tickets")}
-            {activeTab === "history" && t("Audit History")}
-          </h1>
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.35em] text-red-300">Velixa Neo</p>
+              <h1 className="mt-3 text-[1.6rem] font-[800] uppercase tracking-[-1px] md:text-[3rem] md:tracking-[-2px]">
+                {activeTab === "dashboard" && t("Admin Panel")}
+                {activeTab === "orders" && t("Order Management")}
+                {activeTab === "products" && t("Inventory System")}
+                {activeTab === "support" && t("Support Tickets")}
+                {activeTab === "history" && t("Audit History")}
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-white/75">
+                <BellRing size={14} />
+                <span>{openUserTickets.length} open</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => refreshAuditLogs()}
+                disabled={isRefreshingLogs}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-white/75 transition hover:text-white disabled:opacity-50"
+              >
+                <RefreshCw size={14} className={isRefreshingLogs ? "animate-spin" : ""} />
+                <span>{isRefreshingLogs ? "Refreshing" : "Refresh"}</span>
+              </button>
+            </div>
+          </div>
           {adminNotice ? (
             <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-100">
               <CheckCheck size={14} />
               {adminNotice}
             </div>
           ) : null}
+          {lastRefreshAt ? (
+            <p className="mt-4 text-[11px] uppercase tracking-[0.16em] text-white/35">
+              Updated internally at {toDate(lastRefreshAt)?.toLocaleTimeString() ?? "--:--"}
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-8">
           {activeTab === "dashboard" && (
             <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
+              <div className="grid grid-cols-2 gap-4 xl:grid-cols-5">
                 {[
                   { label: "Total Orders", value: liveStats.totalOrders, accent: "from-red-500 to-red-300" },
                   { label: "Pending Orders", value: pendingOrders, accent: "from-amber-400 to-amber-200" },
@@ -698,7 +792,7 @@ export function AdminPage() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${product.stock <= 5 ? "bg-red-500 shadow-[0_0_16px_rgba(239,68,68,0.95)] animate-pulse" : "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.9)]"}`} />
+                          <span className={`h-2.5 w-2.5 rounded-full ${product.stock <= 5 ? "bg-red-500 shadow-[0_0_16px_rgba(239,68,68,0.95)]" : "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.9)]"}`} />
                           <span className="text-sm font-bold">{product.stock}</span>
                         </div>
                       </div>
@@ -1016,75 +1110,119 @@ export function AdminPage() {
           )}
 
           {activeTab === "products" && (
-            <div className="bg-surface-luxe border border-border-luxe rounded-[20px] overflow-hidden shadow-2xl overflow-x-auto w-full">
-              <table className="w-full text-left border-collapse min-w-[980px]">
-                <thead className="bg-[#1a1a1a] text-white/50 text-[10px] uppercase tracking-[2px] font-bold border-b border-border-luxe">
-                  <tr>
-                    <th className="p-6">{t("Product")}</th>
-                    <th className="p-6">{t("Sell Price")}</th>
-                    <th className="p-6">{t("Buy Price (Cost)")}</th>
-                    <th className="p-6">Editable stock</th>
-                    <th className="p-6">{t("Profit/Unit")}</th>
-                    <th className="p-6">{t("Stock Level")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-luxe">
-                  {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-white/5 transition-colors">
-                      <td className="p-6">
-                        <div className="flex items-center gap-4">
-                          <img src={product.image} alt={product.name} className="w-12 h-12 rounded-[10px] object-cover bg-black" />
-                          <span className="font-bold text-sm tracking-wide">{product.name}</span>
-                        </div>
-                      </td>
-                      <td className="p-6 text-sm font-bold text-accent-luxe">{product.price.toLocaleString()} DZD</td>
-                      <td className="p-6">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            defaultValue={product.buyPrice ?? ""}
-                            placeholder="0"
-                            onBlur={(e) => void updateProductField(product.id, "buyPrice", e.target.value)}
-                            className="w-24 bg-black border border-border-luxe rounded px-3 py-1 text-sm text-white focus:border-accent-luxe outline-none"
-                          />
-                          <span className="text-xs text-white/50 font-bold uppercase">DZD</span>
-                        </div>
-                      </td>
-                      <td className="p-6">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            defaultValue={product.stock}
-                            min="0"
-                            onBlur={(e) => void updateProductField(product.id, "stock", e.target.value)}
-                            className="w-24 bg-black border border-border-luxe rounded px-3 py-1 text-sm text-white focus:border-accent-luxe outline-none"
-                          />
-                          <span className="text-xs text-white/50 font-bold uppercase">
-                            {savingProductId === product.id ? "Saving" : "Units"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-6 text-sm font-bold text-[#22c55e]">
+            <div className="space-y-4">
+              <div className="grid gap-4 md:hidden">
+                {products.map((product) => (
+                  <div key={product.id} className="rounded-[22px] border border-white/10 bg-surface-luxe p-4 shadow-2xl">
+                    <div className="flex items-center gap-4">
+                      <img src={product.image} alt={product.name} className="h-14 w-14 rounded-[14px] bg-black object-cover" />
+                      <div className="min-w-0">
+                        <p className="truncate font-bold">{product.name}</p>
+                        <p className="mt-1 text-sm font-bold text-accent-luxe">{product.price.toLocaleString()} DZD</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <label className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-xs uppercase tracking-[0.16em] text-white/45">
+                        <span className="block">Cost</span>
+                        <input
+                          type="number"
+                          defaultValue={product.buyPrice ?? ""}
+                          placeholder="0"
+                          onBlur={(e) => void updateProductField(product.id, "buyPrice", e.target.value)}
+                          className="mt-2 w-full border-none bg-transparent p-0 text-sm font-bold text-white outline-none"
+                        />
+                      </label>
+                      <label className="rounded-2xl border border-white/8 bg-black/20 px-3 py-3 text-xs uppercase tracking-[0.16em] text-white/45">
+                        <span className="block">Stock</span>
+                        <input
+                          type="number"
+                          defaultValue={product.stock}
+                          min="0"
+                          onBlur={(e) => void updateProductField(product.id, "stock", e.target.value)}
+                          className="mt-2 w-full border-none bg-transparent p-0 text-sm font-bold text-white outline-none"
+                        />
+                      </label>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 px-4 py-3">
+                      <span className="text-xs uppercase tracking-[0.16em] text-white/45">Profit</span>
+                      <span className="text-sm font-bold text-emerald-300">
                         {product.buyPrice !== undefined ? (product.price - product.buyPrice).toLocaleString() : "---"} DZD
-                      </td>
-                      <td className="p-6">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full ${
-                              product.stock > 10
-                                ? "bg-[#22c55e] shadow-[0_0_10px_#22c55e]"
-                                : product.stock > 0
-                                  ? "bg-[#fbbf24] shadow-[0_0_10px_#fbbf24]"
-                                  : "bg-red-500 shadow-[0_0_16px_rgba(239,68,68,0.95)] animate-pulse"
-                            }`}
-                          />
-                          <span className="text-[11px] font-bold uppercase tracking-[1px]">{product.stock} {t("Available")}</span>
-                        </div>
-                      </td>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden w-full overflow-x-auto rounded-[20px] border border-border-luxe bg-surface-luxe shadow-2xl md:block">
+                <table className="w-full min-w-[980px] border-collapse text-left">
+                  <thead className="border-b border-border-luxe bg-[#1a1a1a] text-[10px] font-bold uppercase tracking-[2px] text-white/50">
+                    <tr>
+                      <th className="p-6">{t("Product")}</th>
+                      <th className="p-6">{t("Sell Price")}</th>
+                      <th className="p-6">{t("Buy Price (Cost)")}</th>
+                      <th className="p-6">Editable stock</th>
+                      <th className="p-6">{t("Profit/Unit")}</th>
+                      <th className="p-6">{t("Stock Level")}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-border-luxe">
+                    {products.map((product) => (
+                      <tr key={product.id} className="transition-colors hover:bg-white/5">
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <img src={product.image} alt={product.name} className="h-12 w-12 rounded-[10px] bg-black object-cover" />
+                            <span className="text-sm font-bold tracking-wide">{product.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-6 text-sm font-bold text-accent-luxe">{product.price.toLocaleString()} DZD</td>
+                        <td className="p-6">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              defaultValue={product.buyPrice ?? ""}
+                              placeholder="0"
+                              onBlur={(e) => void updateProductField(product.id, "buyPrice", e.target.value)}
+                              className="w-24 rounded border border-border-luxe bg-black px-3 py-1 text-sm text-white outline-none focus:border-accent-luxe"
+                            />
+                            <span className="text-xs font-bold uppercase text-white/50">DZD</span>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              defaultValue={product.stock}
+                              min="0"
+                              onBlur={(e) => void updateProductField(product.id, "stock", e.target.value)}
+                              className="w-24 rounded border border-border-luxe bg-black px-3 py-1 text-sm text-white outline-none focus:border-accent-luxe"
+                            />
+                            <span className="text-xs font-bold uppercase text-white/50">
+                              {savingProductId === product.id ? "Saving" : "Units"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-6 text-sm font-bold text-[#22c55e]">
+                          {product.buyPrice !== undefined ? (product.price - product.buyPrice).toLocaleString() : "---"} DZD
+                        </td>
+                        <td className="p-6">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`h-2.5 w-2.5 rounded-full ${
+                                product.stock > 10
+                                  ? "bg-[#22c55e] shadow-[0_0_10px_#22c55e]"
+                                  : product.stock > 0
+                                    ? "bg-[#fbbf24] shadow-[0_0_10px_#fbbf24]"
+                                    : "bg-red-500 shadow-[0_0_16px_rgba(239,68,68,0.95)]"
+                              }`}
+                            />
+                            <span className="text-[11px] font-bold uppercase tracking-[1px]">{product.stock} {t("Available")}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -1249,6 +1387,30 @@ export function AdminPage() {
               ) : null}
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="fixed inset-x-3 bottom-3 z-50 md:hidden">
+        <div className="grid grid-cols-5 gap-2 rounded-[28px] border border-white/10 bg-[#0b0b0c]/92 p-2 shadow-[0_30px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+          {menuItems.map((item) => (
+            <button
+              key={`mobile-${item.id}`}
+              type="button"
+              onClick={() => {
+                setActiveTab(item.id);
+                setMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`flex min-h-[4.1rem] flex-col items-center justify-center gap-1 rounded-[22px] px-2 text-[10px] font-bold uppercase tracking-[0.12em] transition ${
+                activeTab === item.id
+                  ? "bg-red-500/14 text-white"
+                  : "text-white/55"
+              }`}
+            >
+              {item.icon}
+              <span className="leading-tight">{item.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

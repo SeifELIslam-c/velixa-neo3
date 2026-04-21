@@ -164,15 +164,15 @@ export function ProductRevealCard({
       onClick={handleCardClick}
       variants={containerVariants}
       className={cn(
-        "relative w-full rounded-[20px] border border-border-luxe bg-surface-luxe text-white overflow-hidden shadow-lg cursor-pointer group",
+        "relative w-full min-w-0 rounded-[20px] border border-border-luxe bg-surface-luxe text-white overflow-hidden shadow-lg cursor-pointer group",
         className
       )}
       style={{ opacity: 1 }}
     >
       <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,#060606_0%,#0d0d0d_52%,#080808_100%)] px-3 pb-3 pt-4">
         {isTouchDevice ? (
-          <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex justify-center md:hidden">
-            <div className="rounded-full border border-white/10 bg-black/55 px-3 py-1.5 text-[10px] font-semibold tracking-[0.16em] text-white/80 backdrop-blur">
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 flex justify-center md:hidden">
+            <div className="max-w-[calc(100%-1rem)] rounded-full border border-white/10 bg-black/65 px-3 py-1.5 text-center text-[9px] font-semibold leading-relaxed tracking-[0.12em] text-white/85 backdrop-blur">
               {t("Tap product image to open")}
             </div>
           </div>
@@ -197,7 +197,7 @@ export function ProductRevealCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/24 via-transparent to-transparent" />
 
         {originalPrice && (
-          <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest z-20">
+          <div className="absolute left-3 top-3 z-20 max-w-[calc(100%-1.5rem)] rounded-full bg-red-500 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[0_10px_24px_rgba(239,68,68,0.3)]">
             {t("Sale")}
           </div>
         )}
@@ -212,16 +212,16 @@ export function ProductRevealCard({
       </div>
 
       <div className="p-6 flex flex-col border-t border-white/10">
-        <h3 className="text-xl font-bold text-white mb-2">{name}</h3>
+        <h3 className="mb-2 text-lg font-bold leading-snug text-white sm:text-xl">{name}</h3>
 
-        <div className="flex items-center gap-2 mt-auto">
-          <span className="text-2xl font-bold text-accent-luxe">
+        <div className="mt-auto flex flex-wrap items-end gap-x-2 gap-y-1">
+          <span className="text-2xl font-bold leading-none text-accent-luxe">
             {price.toLocaleString()}
           </span>
-          <span className="text-xs text-accent-luxe font-bold">DZD</span>
+          <span className="text-xs font-bold text-accent-luxe">DZD</span>
 
           {originalPrice && (
-            <span className="text-[10px] text-white/40 line-through font-bold ml-2">
+            <span className="text-[10px] font-bold text-white/40 line-through sm:ml-2">
               {originalPrice} DZD
             </span>
           )}
@@ -237,8 +237,8 @@ export function ProductRevealCard({
       >
         <div className="p-6 space-y-4">
           <motion.div variants={contentVariants}>
-            <h4 className="font-bold text-lg mb-1">{name}</h4>
-            <p className="text-xs text-white/60">
+            <h4 className="mb-1 text-lg font-bold leading-snug">{name}</h4>
+            <p className="text-xs leading-relaxed text-white/60">
               {t("Premium audio experience with ultimate comfort.")}
             </p>
           </motion.div>

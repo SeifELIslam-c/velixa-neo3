@@ -192,8 +192,8 @@ export function CheckoutPage() {
         </div>
       )}
       
-      <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <div className="space-y-6">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 gap-12 lg:grid-cols-2">
+        <div className="order-2 space-y-6 lg:order-1">
           <h2 className="text-[2.5rem] font-[800] leading-none uppercase tracking-[-1px]">
             {t('Checkout')}
           </h2>
@@ -238,7 +238,7 @@ export function CheckoutPage() {
           )}
         </div>
 
-        <div>
+        <div className="order-1 lg:order-2">
           <div className="bg-surface-luxe border border-border-luxe p-8 rounded-[30px] shadow-2xl relative overflow-hidden">
             <h2 className="text-2xl font-[800] uppercase tracking-[-1px] mb-8">{t('Shipping Info')}</h2>
             

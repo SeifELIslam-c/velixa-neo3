@@ -1,17 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, ShoppingCart, X, CreditCard, Sparkles } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, CreditCard } from "lucide-react";
 import { Button } from "./button";
-import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { useStore } from "@/store";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 export function InteractiveCart() {
-    const { cart, products, addToCart, removeFromCart, updateQuantity } = useStore();
+    const { cart, removeFromCart, updateQuantity } = useStore();
     const navigate = useNavigate();
     const { t } = useTranslation();
 
@@ -20,10 +18,6 @@ export function InteractiveCart() {
         (sum, item) => sum + item.price * item.quantity,
         0
     );
-    const recommendedProducts = products
-        .filter((product) => product.id === "1" || product.id === "2" || product.model3d)
-        .slice(0, 2);
-
     return (
         <div className="w-full max-w-4xl mx-auto py-32 px-6">
             <h1 className="text-4xl font-bold mb-8">{t('Cart')}</h1>
@@ -111,58 +105,6 @@ export function InteractiveCart() {
                             ))}
                         </AnimatePresence>
 
-                        {recommendedProducts.length > 0 ? (
-                            <motion.div
-                                initial={{ opacity: 0, y: 18 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))] p-5 md:p-6"
-                            >
-                                <div className="mb-4 flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/8">
-                                        <Sparkles className="h-4 w-4 text-white/80" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-white">{t("You can also add")}</h3>
-                                        <p className="text-sm text-white/50">{t("Pick one more product directly from your cart.")}</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    {recommendedProducts.map((product) => (
-                                        <div
-                                            key={product.id}
-                                            className="rounded-[20px] border border-white/8 bg-black/25 p-3"
-                                        >
-                                            <div className="mb-3 flex items-center gap-3">
-                                                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-white/8 bg-black/40 p-2">
-                                                    <img
-                                                        src={product.image}
-                                                        alt={product.name}
-                                                        className="h-full w-full object-contain"
-                                                        loading="lazy"
-                                                        decoding="async"
-                                                    />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <h4 className="line-clamp-2 text-sm font-bold text-white">{product.name}</h4>
-                                                    <p className="mt-1 text-xs text-white/45">{t("Ready to add from here.")}</p>
-                                                    <p className="mt-2 text-base font-bold text-white">{product.price.toLocaleString()} DZD</p>
-                                                </div>
-                                            </div>
-
-                                            <Button
-                                                onClick={() => addToCart(product)}
-                                                disabled={product.stock === 0}
-                                                className="w-full rounded-full bg-white text-black hover:bg-white/90"
-                                            >
-                                                <ShoppingCart className="mr-2 h-4 w-4" />
-                                                {t("Add to Cart")}
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        ) : null}
                     </div>
 
                     <div className="w-full md:w-80 shrink-0">

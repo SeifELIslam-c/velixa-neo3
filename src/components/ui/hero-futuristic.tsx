@@ -3,6 +3,7 @@
 import { Canvas, extend, useFrame, useThree } from '@react-three/fiber';
 import { useAspect, useTexture } from '@react-three/drei';
 import { useMemo, useRef, useState, useEffect } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import * as THREE from 'three/webgpu';
 import { bloom } from 'three/examples/jsm/tsl/display/BloomNode.js';
 import { Mesh } from 'three';
@@ -172,7 +173,7 @@ import { useTranslation } from 'react-i18next';
 
 export const HeroFuturistic = () => {
   const { t } = useTranslation();
-  
+  const shouldReduceMotion = useReducedMotion();
   const titleString = t('Level Up Your Gear');
   const titleWords = titleString.split(' ');
   const subtitle = t('Ultra Premium Audio Experience.');
@@ -196,17 +197,20 @@ export const HeroFuturistic = () => {
     }
   }, [visibleWords, titleWords.length]);
 
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  const shouldUseLightMode = shouldReduceMotion;
+
   return (
     <div className="h-screen w-full relative">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(5,5,5,0.12),rgba(5,5,5,0.62)_58%,rgba(5,5,5,0.88)_100%)] z-20" />
-      <div className="h-screen uppercase items-center w-full absolute z-60 pointer-events-none px-4 md:px-10 flex justify-center flex-col">
-        <div className="px-5 py-6 md:px-10 md:py-8 rounded-[2rem] border border-white/10 bg-black/25 backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.35)]">
-        <div className="text-3xl md:text-5xl xl:text-6xl 2xl:text-7xl font-black tracking-tighter drop-shadow-[0_12px_40px_rgba(0,0,0,0.65)]">
-          <div className="flex space-x-2 md:space-x-4 overflow-hidden text-white">
+      <div className="absolute z-60 flex h-screen w-full flex-col justify-center px-4 uppercase pointer-events-none md:px-10">
+        <div className="mx-auto w-full max-w-5xl rounded-[2rem] border border-white/10 bg-black/25 px-4 py-6 text-center backdrop-blur-xl shadow-[0_25px_80px_rgba(0,0,0,0.35)] md:px-10 md:py-8">
+        <div className="text-3xl font-black tracking-tight drop-shadow-[0_12px_40px_rgba(0,0,0,0.65)] md:text-5xl xl:text-6xl 2xl:text-7xl">
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-2 overflow-hidden text-white md:gap-x-4">
             {titleWords.map((word, index) => (
               <div
                 key={index}
-                className={index < visibleWords ? 'fade-in' : ''}
+                className={`${index < visibleWords ? 'fade-in' : ''} max-w-full break-words`}
                 style={{ animationDelay: `${index * 0.13 + (delays[index] || 0)}s`, opacity: index < visibleWords ? undefined : 0, textShadow: '0 8px 28px rgba(0,0,0,0.55)' }}
               >
                 {word}
@@ -214,12 +218,12 @@ export const HeroFuturistic = () => {
             ))}
           </div>
         </div>
-        <div className="text-sm md:text-xl xl:text-2xl mt-5 overflow-hidden text-white font-bold tracking-[0.35em] uppercase flex justify-center">
+        <div className="mt-5 flex justify-center overflow-hidden text-white">
           <div
             className={subtitleVisible ? 'fade-in-subtitle' : ''}
             style={{ animationDelay: `${titleWords.length * 0.13 + 0.2 + subtitleDelay}s`, opacity: subtitleVisible ? undefined : 0 }}
           >
-            <span className="inline-flex items-center rounded-full border border-red-400/35 bg-red-500/16 px-4 py-2 shadow-[0_12px_36px_rgba(239,68,68,0.18)]">
+            <span className="inline-flex max-w-full items-center rounded-full border border-red-400/35 bg-red-500/16 px-4 py-2 text-center text-[11px] font-bold uppercase leading-relaxed tracking-[0.2em] shadow-[0_12px_36px_rgba(239,68,68,0.18)] md:text-xl xl:text-2xl md:tracking-[0.35em]">
               {subtitle}
             </span>
           </div>
@@ -244,18 +248,23 @@ export const HeroFuturistic = () => {
         </button>
       </div>
 
-      <Canvas
-        flat
-        className="w-full h-full bg-bg-luxe"
-        gl={async (props) => {
-          const renderer = new THREE.WebGPURenderer(props as any);
-          await renderer.init();
-          return renderer;
-        }}
-      >
-        <PostProcessing fullScreenEffect={true} />
-        <Scene />
-      </Canvas>
+      {shouldUseLightMode ? (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(239,68,68,0.18),transparent_26%),radial-gradient(circle_at_50%_60%,rgba(255,255,255,0.08),transparent_22%),linear-gradient(180deg,#050505_0%,#090909_44%,#050505_100%)]" />
+      ) : (
+        <Canvas
+          flat
+          className="w-full h-full bg-bg-luxe"
+          dpr={isMobile ? [1, 1.2] : [1, 1.5]}
+          gl={async (props) => {
+            const renderer = new THREE.WebGPURenderer(props as any);
+            await renderer.init();
+            return renderer;
+          }}
+        >
+          <PostProcessing fullScreenEffect={true} />
+          <Scene />
+        </Canvas>
+      )}
     </div>
   );
 };

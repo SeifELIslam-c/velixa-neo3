@@ -9,6 +9,7 @@ import { productSeeds } from './constants';
 import { adminDb } from './firebase-admin';
 import { AuthedRequest, requireAdmin, requireAuth } from './middleware/auth';
 import { ecotrackService } from './services/ecotrack';
+import { createOrderAlertService } from './services/order-alerts';
 
 assertServerConfig();
 
@@ -32,6 +33,7 @@ const ordersCollection = adminDb.collection('orders');
 const usersCollection = adminDb.collection('users');
 const supportTicketsCollection = adminDb.collection('supportTickets');
 const auditLogsCollection = adminDb.collection('adminAuditLogs');
+const orderAlertService = createOrderAlertService(config.alerts);
 
 const mapDoc = <T>(doc: FirebaseFirestore.QueryDocumentSnapshot | FirebaseFirestore.DocumentSnapshot) =>
   ({
@@ -206,6 +208,30 @@ const buildEcotrackOrderPayload = (payload: any, order: any) => {
     produit: itemNames || 'Order items',
     remarque: shipping.is_stopdesk ? 'Stopdesk order' : 'Home delivery order',
   };
+};
+
+const notifyOrderCreated = async (order: any) => {
+  if (!orderAlertService.isConfigured()) {
+    return;
+  }
+
+  if (order.source !== 'online') {
+    return;
+  }
+
+  const itemCount = Array.isArray(order.items)
+    ? order.items.reduce((sum: number, item: any) => sum + Number(item.qty ?? 0), 0)
+    : 0;
+
+  await orderAlertService.sendOrderCreated({
+    orderId: String(order.id ?? ''),
+    customerName: String(order.customer?.name ?? '').trim(),
+    phone: String(order.customer?.phone ?? '').trim(),
+    total: Number(order.total ?? 0),
+    itemCount,
+    commune: String(order.shipping?.commune ?? '').trim() || undefined,
+    source: 'online',
+  });
 };
 
 const computeStats = async () => {
@@ -711,6 +737,10 @@ app.post('/api/orders', asyncHandler(async (req: Request, res: Response) => {
       total: order.total,
       customerName: order.customer?.name ?? null,
     },
+  });
+
+  notifyOrderCreated(order).catch((error) => {
+    console.error('Failed to send order notification', error);
   });
 
   res.status(201).json({
