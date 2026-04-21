@@ -1,5 +1,6 @@
 import * as React from "react";
 import { CheckCircle2, PackageCheck, Store, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 
@@ -116,6 +117,7 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
     ref
   ) => {
     const [showConfetti, setShowConfetti] = React.useState(false);
+    const { t, i18n } = useTranslation();
 
     React.useEffect(() => {
       const mountTimer = setTimeout(() => setShowConfetti(true), 120);
@@ -132,7 +134,10 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
       maximumFractionDigits: 0,
     }).format(amount);
 
-    const formattedDate = new Intl.DateTimeFormat("fr-FR", {
+    const dateLocale =
+      i18n.language === "ar" ? "ar-DZ" : i18n.language.startsWith("fr") ? "fr-FR" : "en-US";
+
+    const formattedDate = new Intl.DateTimeFormat(dateLocale, {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -146,7 +151,7 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
         <div
           ref={ref}
           className={cn(
-            "relative z-50 w-full max-w-[20.25rem] overflow-y-auto rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,13,13,0.98),rgba(28,16,16,0.98))] text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] max-h-[calc(100vh-13rem)] sm:max-h-[calc(100vh-3rem)] sm:max-w-md sm:rounded-[28px]",
+            "relative z-50 w-full max-w-[20.25rem] overflow-x-hidden overflow-y-auto rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,13,13,0.98),rgba(28,16,16,0.98))] text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] max-h-[calc(100vh-13rem)] sm:max-w-md sm:max-h-[calc(100vh-12rem)] sm:rounded-[28px] lg:max-h-[calc(100vh-14rem)]",
             "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-8 duration-700",
             className
           )}
@@ -156,7 +161,7 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
             type="button"
             onClick={onClose}
             className="absolute right-3 top-3 z-10 rounded-full border border-white/10 bg-black/35 p-2 text-white/70 transition hover:text-white sm:right-4 sm:top-4"
-            aria-label="Close order ticket"
+            aria-label={t("Close")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -169,12 +174,12 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
               <CheckCircle2 className="h-8 w-8 text-red-400 sm:h-10 sm:w-10" />
             </div>
             <p className="mt-4 text-[10px] uppercase tracking-[0.32em] text-red-300 sm:mt-5 sm:text-[11px] sm:tracking-[0.45em]">Velixa Neo</p>
-            <h2 className="mt-3 text-[1.3rem] font-black tracking-tight sm:text-3xl">Order Received</h2>
+            <h2 className="mt-3 text-[1.3rem] font-black tracking-tight sm:text-3xl">{t("Order Received")}</h2>
             <p className="mt-2 text-[13px] leading-6 text-white/65 sm:text-sm">
-              Your order has been posted successfully. You will be contacted soon for confirmation.
+              {t("Your order has been posted successfully. You will be contacted soon for confirmation.")}
             </p>
             <p className="mt-3 text-[11px] uppercase tracking-[0.18em] text-white/40">
-              Close this ticket when you are ready
+              {t("Close this ticket when you are ready")}
             </p>
           </div>
 
@@ -183,28 +188,28 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Order ID</p>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">{t("Order ID")}</p>
                 <p className="mt-2 break-all font-mono text-sm leading-6">{orderId}</p>
               </div>
               <div className="sm:text-right">
-                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Total</p>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">{t("Total")}</p>
                 <p className="mt-2 text-[1.55rem] font-bold leading-7 sm:text-lg">{formattedAmount}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Customer</p>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">{t("Customer")}</p>
                 <p className="mt-2 font-medium leading-6">{customerName}</p>
               </div>
               <div className="sm:text-right">
-                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Phone</p>
+                <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">{t("Phone")}</p>
                 <p className="mt-2 font-medium leading-6">{phone}</p>
               </div>
             </div>
 
             <div>
-              <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Date & Time</p>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">{t("Date & Time")}</p>
               <p className="mt-2 font-medium leading-6">{formattedDate}</p>
             </div>
 
@@ -213,20 +218,20 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
                 <Store className="mt-0.5 h-5 w-5 text-red-300" />
                 <div>
                   <p className="font-semibold">velixa.neo</p>
-                  <p className="text-sm leading-6 text-white/55">Order channel: official website</p>
+                  <p className="text-sm leading-6 text-white/55">{t("Order channel: official website")}</p>
                 </div>
               </div>
               <div className="mt-4 flex items-start gap-3">
                 <PackageCheck className="mt-0.5 h-5 w-5 text-red-300" />
                 <div>
-                  <p className="font-semibold">Status: posted</p>
-                  <p className="text-sm leading-6 text-white/55">Our team will contact you soon.</p>
+                  <p className="font-semibold">{t("Status: posted")}</p>
+                  <p className="text-sm leading-6 text-white/55">{t("Our team will contact you soon.")}</p>
                 </div>
               </div>
               <div className="mt-4 flex items-start gap-3">
                 <PackageCheck className="mt-0.5 h-5 w-5 text-red-300" />
                 <div>
-                  <p className="font-semibold">{deliveryLabel}</p>
+                  <p className="font-semibold">{t(deliveryLabel)}</p>
                   <p className="text-sm leading-6 text-white/55 break-words">{locationLabel}</p>
                 </div>
               </div>

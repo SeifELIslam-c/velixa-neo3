@@ -197,7 +197,7 @@ export function CheckoutPage() {
       <Navbar />
 
       {ordered && createdOrder && (
-        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/70 px-3 pb-24 pt-32 backdrop-blur-sm animate-in fade-in-0 duration-500 md:items-center md:px-4 md:pb-4 md:pt-4">
+        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/70 px-3 pb-24 pt-32 backdrop-blur-sm animate-in fade-in-0 duration-500 md:px-6 md:pb-8 md:pt-36 lg:pt-40">
           <TicketConfirmationCard
             orderId={createdOrder.id}
             amount={createdOrder.total}
@@ -211,7 +211,7 @@ export function CheckoutPage() {
                 : createdOrder.shipping.address
             }
             barcodeValue={createdOrder.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 18)}
-            className="my-auto"
+            className="my-auto md:mx-auto"
             onClose={handleCloseTicket}
           />
         </div>
