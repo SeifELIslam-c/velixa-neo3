@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-bg-luxe: #050505;
+  --color-surface-luxe: #121212;
+  --color-accent-luxe: #ef4444;
+  --color-glass-luxe: rgba(255, 255, 255, 0.05);
+  --color-border-luxe: rgba(255, 255, 255, 0.1);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: #050505;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; filter: blur(5px); transform: translateY(15px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.8s ease forwards;
+  opacity: 0;
+}
+
+.fade-in-subtitle {
+  animation: fadeIn 1s ease forwards;
+  opacity: 0;
+}
+
+.explore-btn {
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  animation: fadeIn 1s ease forwards;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.explore-btn:hover {
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.explore-btn:hover .arrow-svg path {
+  stroke: #22c55e;
+  transition: stroke 0.3s ease;
+}
+
+.arrow-svg {
+  margin-top: 12px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+  60% { transform: translateY(-4px); }
+}

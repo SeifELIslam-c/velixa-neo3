@@ -1,0 +1,14 @@
+node_modules/
+build/
+dist/
+dist-server/
+cpanel-server-deploy/
+coverage/
+.DS_Store
+*.log
+*.zip
+*-firebase-adminsdk-*.json
+.render/
+.netlify/
+.env*
+!.env.example

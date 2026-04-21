@@ -1,0 +1,27 @@
+export const productSeeds = [
+  {
+    id: '1',
+    name: 'BLT Airpods PRO 2.2',
+    price: 1650,
+    oldPrice: 2300,
+    category: 'Audio',
+    stock: 15,
+    image: 'https://ik.imagekit.io/sanqe8dszx/Velixa.neo/main.png',
+    model3d: true,
+    buyPrice: 1050,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    name: 'Airpods Pro VRAK',
+    price: 1000,
+    oldPrice: 1900,
+    category: 'Audio',
+    stock: 20,
+    image: 'https://ik.imagekit.io/sanqe8dszx/Velixa.neo/VRAK3.png',
+    buyPrice: 650,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
