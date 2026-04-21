@@ -29,6 +29,8 @@ export const config = {
     twilioFromNumber: process.env.TWILIO_FROM_NUMBER ?? '',
     twilioAdminNumber: process.env.TWILIO_ADMIN_NUMBER ?? '',
     twilioToNumbers: process.env.TWILIO_TO_NUMBERS ?? '',
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+    telegramChatId: process.env.TELEGRAM_CHAT_ID ?? '',
   },
   adminEmails: (process.env.ADMIN_EMAILS ?? '')
     .split(',')

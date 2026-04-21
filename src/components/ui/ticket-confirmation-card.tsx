@@ -144,7 +144,7 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
         <div
           ref={ref}
           className={cn(
-            "relative z-50 w-full max-w-md overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,13,13,0.98),rgba(28,16,16,0.98))] text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)]",
+            "relative z-50 w-full max-w-[22rem] overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(13,13,13,0.98),rgba(28,16,16,0.98))] text-white shadow-[0_30px_120px_rgba(0,0,0,0.55)] sm:max-w-md sm:rounded-[28px]",
             "animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-8 duration-700",
             className
           )}
@@ -154,45 +154,45 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
           <div className="absolute -left-4 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full bg-[#090909]" />
           <div className="absolute -right-4 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full bg-[#090909]" />
 
-          <div className="relative p-8 text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-red-400/20 bg-red-500/10">
-              <CheckCircle2 className="h-10 w-10 text-red-400" />
+          <div className="relative p-5 text-center sm:p-8">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-red-400/20 bg-red-500/10 sm:h-20 sm:w-20">
+              <CheckCircle2 className="h-8 w-8 text-red-400 sm:h-10 sm:w-10" />
             </div>
-            <p className="mt-5 text-[11px] uppercase tracking-[0.45em] text-red-300">Velixa Neo</p>
-            <h2 className="mt-3 text-3xl font-black tracking-tight">Order Received</h2>
-            <p className="mt-2 text-sm text-white/65">
+            <p className="mt-4 text-[10px] uppercase tracking-[0.32em] text-red-300 sm:mt-5 sm:text-[11px] sm:tracking-[0.45em]">Velixa Neo</p>
+            <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">Order Received</h2>
+            <p className="mt-2 text-sm leading-6 text-white/65">
               Your order has been posted successfully. You will be contacted soon for confirmation.
             </p>
           </div>
 
-          <div className="px-8 pb-8 space-y-6">
+          <div className="space-y-5 px-5 pb-5 sm:px-8 sm:pb-8 sm:space-y-6">
             <DashedLine />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Order ID</p>
-                <p className="mt-2 font-mono text-sm">{orderId}</p>
+                <p className="mt-2 break-all font-mono text-sm leading-6">{orderId}</p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Total</p>
-                <p className="mt-2 text-lg font-bold">{formattedAmount}</p>
+                <p className="mt-2 text-lg font-bold leading-6">{formattedAmount}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Customer</p>
-                <p className="mt-2 font-medium">{customerName}</p>
+                <p className="mt-2 font-medium leading-6">{customerName}</p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right">
                 <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Phone</p>
-                <p className="mt-2 font-medium">{phone}</p>
+                <p className="mt-2 font-medium leading-6">{phone}</p>
               </div>
             </div>
 
             <div>
               <p className="text-[11px] uppercase tracking-[0.25em] text-white/40">Date & Time</p>
-              <p className="mt-2 font-medium">{formattedDate}</p>
+              <p className="mt-2 font-medium leading-6">{formattedDate}</p>
             </div>
 
             <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
@@ -200,21 +200,21 @@ const TicketConfirmationCard = React.forwardRef<HTMLDivElement, TicketConfirmati
                 <Store className="mt-0.5 h-5 w-5 text-red-300" />
                 <div>
                   <p className="font-semibold">velixa.neo</p>
-                  <p className="text-sm text-white/55">Order channel: official website</p>
+                  <p className="text-sm leading-6 text-white/55">Order channel: official website</p>
                 </div>
               </div>
               <div className="mt-4 flex items-start gap-3">
                 <PackageCheck className="mt-0.5 h-5 w-5 text-red-300" />
                 <div>
                   <p className="font-semibold">Status: posted</p>
-                  <p className="text-sm text-white/55">Our team will contact you soon.</p>
+                  <p className="text-sm leading-6 text-white/55">Our team will contact you soon.</p>
                 </div>
               </div>
               <div className="mt-4 flex items-start gap-3">
                 <PackageCheck className="mt-0.5 h-5 w-5 text-red-300" />
                 <div>
                   <p className="font-semibold">{deliveryLabel}</p>
-                  <p className="text-sm text-white/55">{locationLabel}</p>
+                  <p className="text-sm leading-6 text-white/55 break-words">{locationLabel}</p>
                 </div>
               </div>
             </div>

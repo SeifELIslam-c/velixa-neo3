@@ -43,6 +43,7 @@ export function CheckoutPage() {
   const [wilayas, setWilayas] = useState<WilayaOption[]>([]);
   const [communes, setCommunes] = useState<CommuneOption[]>([]);
   const [loadingCommunes, setLoadingCommunes] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [fees, setFees] = useState<Array<{ wilaya_id: string; tarif: string; tarif_stopdesk: string }> | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
   const [ecotrackError, setEcotrackError] = useState<string | null>(null);
@@ -128,8 +129,10 @@ export function CheckoutPage() {
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingOrder) return;
 
     try {
+      setIsSubmittingOrder(true);
       const response = await apiFetch<{
         order: {
           id: string;
@@ -166,6 +169,8 @@ export function CheckoutPage() {
       }, 5500);
     } catch(err) {
       alert(err instanceof Error ? err.message : "Error placing order");
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -376,14 +381,22 @@ export function CheckoutPage() {
               <button 
                 type="submit" 
                 disabled={
+                  isSubmittingOrder ||
                   cart.length === 0 ||
                   !fees ||
                   wilayas.length === 0 ||
                   (form.is_stopdesk && communes.find((c:any) => c.nom === form.commune)?.has_stop_desk === 0)
                 }
-                className="w-full py-[1.2rem] mt-6 bg-gradient-to-b from-accent-luxe to-red-600 text-white font-bold uppercase tracking-tight rounded-[15px] shadow-[0_4px_0_#991b1b,0_10px_20px_rgba(239,68,68,0.3)] hover:brightness-110 active:translate-y-[2px] active:shadow-[0_2px_0_#991b1b,0_5px_10px_rgba(239,68,68,0.3)] transition-all disabled:opacity-50 disabled:active:translate-y-0 disabled:shadow-none"
+                className="mt-6 flex w-full items-center justify-center gap-3 rounded-[15px] bg-gradient-to-b from-accent-luxe to-red-600 py-[1.2rem] font-bold uppercase tracking-tight text-white shadow-[0_4px_0_#991b1b,0_10px_20px_rgba(239,68,68,0.3)] transition-all hover:brightness-110 active:translate-y-[2px] active:shadow-[0_2px_0_#991b1b,0_5px_10px_rgba(239,68,68,0.3)] disabled:opacity-50 disabled:active:translate-y-0 disabled:shadow-none"
               >
-                {t('Place Order')}
+                {isSubmittingOrder ? (
+                  <>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    <span>Sending order...</span>
+                  </>
+                ) : (
+                  t('Place Order')
+                )}
               </button>
             </form>
           </div>

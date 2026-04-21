@@ -62,6 +62,24 @@ export const createOrderWebhookCard = (payload: OrderAlertPayload) => ({
   ],
 });
 
+export const createTelegramMessage = (payload: OrderAlertPayload) => {
+  const lines = [
+    `🛒 New ${payload.source} order`,
+    ``,
+    `Order ID: ${payload.orderId}`,
+    `Customer: ${payload.customerName || "Unknown"}`,
+    `Phone: ${payload.phone || "N/A"}`,
+    `Items: ${payload.itemCount}`,
+    `Total: ${Number(payload.total || 0).toLocaleString()} DZD`,
+  ];
+
+  if (payload.commune) {
+    lines.push(`Area: ${payload.commune}`);
+  }
+
+  return lines.join("\n");
+};
+
 export const createOrderAlertService = ({
   twilioAccountSid,
   twilioAuthToken,
@@ -69,6 +87,8 @@ export const createOrderAlertService = ({
   twilioAdminNumber,
   twilioToNumbers,
   alertWebhookUrl,
+  telegramBotToken,
+  telegramChatId,
 }: {
   twilioAccountSid?: string;
   twilioAuthToken?: string;
@@ -76,6 +96,8 @@ export const createOrderAlertService = ({
   twilioAdminNumber?: string;
   twilioToNumbers?: string;
   alertWebhookUrl?: string;
+  telegramBotToken?: string;
+  telegramChatId?: string;
 }) => {
   const smsTargets = (() => {
     const singleAdminNumber = trimValue(twilioAdminNumber);
@@ -93,14 +115,15 @@ export const createOrderAlertService = ({
     smsTargets.length > 0;
 
   const webhookReady = Boolean(trimValue(alertWebhookUrl));
+  const telegramReady = Boolean(trimValue(telegramBotToken)) && Boolean(trimValue(telegramChatId));
 
   return {
     isConfigured() {
-      return smsReady || webhookReady;
+      return smsReady || webhookReady || telegramReady;
     },
 
     async sendOrderCreated(payload: OrderAlertPayload) {
-      if (!smsReady && !webhookReady) {
+      if (!smsReady && !webhookReady && !telegramReady) {
         return { sent: false, providers: [] as string[] };
       }
 
@@ -153,6 +176,28 @@ export const createOrderAlertService = ({
         );
 
         providers.push("webhook");
+      }
+
+      if (telegramReady) {
+        tasks.push(
+          fetch(`https://api.telegram.org/bot${trimValue(telegramBotToken)}/sendMessage`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chat_id: trimValue(telegramChatId),
+              text: createTelegramMessage(payload),
+            }),
+          }).then(async (response) => {
+            if (!response.ok) {
+              const body = await response.text();
+              throw new Error(`Telegram alert failed: ${response.status} ${body}`);
+            }
+          })
+        );
+
+        providers.push("telegram");
       }
 
       await Promise.all(tasks);
