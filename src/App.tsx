@@ -68,6 +68,11 @@ export default function App() {
   }, [setProducts, setUser]);
 
   const handleLoginSuccess = () => {
+    if (typeof window !== 'undefined' && window.sessionStorage.getItem('velixa-post-order-created') === 'true') {
+      navigate('/account');
+      return;
+    }
+
     navigate('/');
   };
 

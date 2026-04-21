@@ -55,18 +55,41 @@ export function AccountPage() {
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-
+  const loadAccountData = () =>
     Promise.all([
       apiFetch<{ profile: AccountProfile }>("/account"),
       apiFetch<{ orders: AccountOrder[] }>("/orders"),
       apiFetch<{ tickets: SupportTicket[] }>("/support-tickets"),
-    ])
-      .then(([profileResponse, ordersResponse, ticketsResponse]) => {
-        setProfile(profileResponse.profile);
-        setOrders(ordersResponse.orders);
-        setTickets(ticketsResponse.tickets);
+    ]).then(([profileResponse, ordersResponse, ticketsResponse]) => {
+      setProfile(profileResponse.profile);
+      setOrders(ordersResponse.orders);
+      setTickets(ticketsResponse.tickets);
+    });
+
+  useEffect(() => {
+    if (!user) return;
+
+    loadAccountData()
+      .catch(() => {
+        setStatusMessage(t("Unable to load account data right now."));
+      });
+  }, [user, t]);
+
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return;
+
+    const pendingOrderId = window.sessionStorage.getItem("velixa-last-order-id");
+    const shouldClaimOrder = window.sessionStorage.getItem("velixa-post-order-created") === "true";
+    if (!pendingOrderId || !shouldClaimOrder) return;
+
+    apiFetch(`/orders/${pendingOrderId}/claim`, {
+      method: "POST",
+    })
+      .then(() => loadAccountData())
+      .then(() => {
+        setStatusMessage("Your latest order ticket has been saved to your account.");
+        window.sessionStorage.removeItem("velixa-last-order-id");
+        window.sessionStorage.removeItem("velixa-post-order-created");
       })
       .catch(() => {
         setStatusMessage(t("Unable to load account data right now."));
@@ -176,7 +199,9 @@ export function AccountPage() {
                 <p className="mb-2 text-xs uppercase tracking-[0.2em] text-white/45">Phone</p>
                 <input
                   value={profile?.phone ?? ""}
-                  onChange={(e) => setProfile((current) => current ? { ...current, phone: e.target.value } : current)}
+                  inputMode="numeric"
+                  maxLength={10}
+                  onChange={(e) => setProfile((current) => current ? { ...current, phone: e.target.value.replace(/\D/g, "").slice(0, 10) } : current)}
                   className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none transition focus:border-red-400/50"
                 />
               </div>

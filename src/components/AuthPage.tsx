@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { authApi } from '@/lib/auth';
@@ -14,6 +14,17 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const message = window.sessionStorage.getItem('velixa-auth-message');
+    if (message) {
+      setInfoMessage(message);
+      window.sessionStorage.removeItem('velixa-auth-message');
+    }
+  }, []);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +83,12 @@ export function AuthPage({ onSuccess }: AuthPageProps) {
             <p className="mt-3 text-white/55">
               {t('Google works instantly. Email/password is available too.')}
             </p>
+
+            {infoMessage ? (
+              <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                {infoMessage}
+              </div>
+            ) : null}
 
             <button
               onClick={handleGoogleAuth}

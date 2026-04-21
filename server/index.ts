@@ -544,6 +544,52 @@ app.get('/api/orders', requireAuth, asyncHandler(async (req: AuthedRequest, res:
   res.json({ orders });
 }));
 
+app.post('/api/orders/:id/claim', requireAuth, asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const id = req.params.id;
+  const orderRef = ordersCollection.doc(id);
+  const orderSnapshot = await orderRef.get();
+
+  if (!orderSnapshot.exists) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const order = mapDoc<any>(orderSnapshot);
+  if (order.userId && order.userId !== req.user?.uid && !req.user?.isAdmin) {
+    return res.status(403).json({ error: 'Order already belongs to another account' });
+  }
+
+  await orderRef.set(
+    {
+      userId: req.user?.uid ?? null,
+      updatedAt: toIsoNow(),
+    },
+    { merge: true }
+  );
+
+  const updatedSnapshot = await orderRef.get();
+  const updatedOrder = mapDoc<any>(updatedSnapshot);
+
+  await writeAuditLog({
+    actor: getActor(req),
+    entityType: 'order',
+    entityId: id,
+    action: 'order.claimed_by_user',
+    summary: `Attached order ${id} to account`,
+    changes: [
+      {
+        field: 'userId',
+        before: order.userId ?? null,
+        after: req.user?.uid ?? null,
+      },
+    ],
+    metadata: {
+      orderId: id,
+    },
+  });
+
+  res.json({ order: updatedOrder });
+}));
+
 app.get('/api/support-tickets', requireAuth, asyncHandler(async (req: AuthedRequest, res: Response) => {
   const snapshot = await supportTicketsCollection.orderBy('createdAt', 'desc').get();
   const tickets = snapshot.docs

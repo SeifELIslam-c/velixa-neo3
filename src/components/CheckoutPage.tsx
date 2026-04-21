@@ -17,6 +17,7 @@ interface CommuneOption {
 }
 
 const GUELMA_HOME_ONLY_COMMUNES = new Set(["Guelma", "Oued Zenati"]);
+const sanitizePhoneNumber = (value: string) => value.replace(/\D/g, "").slice(0, 10);
 
 export function CheckoutPage() {
   const { cart, clearCart, user } = useStore();
@@ -40,6 +41,7 @@ export function CheckoutPage() {
     customer: { name: string; phone: string };
     shipping: { is_stopdesk: boolean; commune: string; wilaya_id: number; address: string };
   } | null>(null);
+  const [postOrderPrompt, setPostOrderPrompt] = useState<string | null>(null);
   const [wilayas, setWilayas] = useState<WilayaOption[]>([]);
   const [communes, setCommunes] = useState<CommuneOption[]>([]);
   const [loadingCommunes, setLoadingCommunes] = useState(false);
@@ -163,10 +165,6 @@ export function CheckoutPage() {
       setCreatedOrder(response.order);
       setOrdered(true);
       clearCart();
-      
-      setTimeout(() => {
-        navigate("/");
-      }, 5500);
     } catch(err) {
       alert(err instanceof Error ? err.message : "Error placing order");
     } finally {
@@ -174,12 +172,32 @@ export function CheckoutPage() {
     }
   };
 
+  const handleCloseTicket = () => {
+    if (!createdOrder) return;
+
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("velixa-last-order-id", createdOrder.id);
+      window.sessionStorage.setItem("velixa-post-order-created", "true");
+      window.sessionStorage.setItem("velixa-auth-message", "Sign in to save your new order ticket in your account.");
+    }
+
+    setOrdered(false);
+    setPostOrderPrompt("Sign in to save your new order ticket in your account.");
+
+    if (user) {
+      navigate("/account");
+      return;
+    }
+
+    navigate("/login");
+  };
+
   return (
     <div className="bg-bg-luxe min-h-screen text-white pt-28 pb-12 px-6 font-sans">
       <Navbar />
 
       {ordered && createdOrder && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm animate-in fade-in-0 duration-500">
+        <div className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/70 px-3 pb-24 pt-32 backdrop-blur-sm animate-in fade-in-0 duration-500 md:items-center md:px-4 md:pb-4 md:pt-4">
           <TicketConfirmationCard
             orderId={createdOrder.id}
             amount={createdOrder.total}
@@ -193,6 +211,8 @@ export function CheckoutPage() {
                 : createdOrder.shipping.address
             }
             barcodeValue={createdOrder.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 18)}
+            className="my-auto"
+            onClose={handleCloseTicket}
           />
         </div>
       )}
@@ -260,6 +280,12 @@ export function CheckoutPage() {
               </div>
             )}
 
+            {postOrderPrompt && !ordered ? (
+              <div className="mb-6 rounded-[15px] border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                {postOrderPrompt}
+              </div>
+            ) : null}
+
             <form onSubmit={handleCheckout} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
@@ -278,10 +304,13 @@ export function CheckoutPage() {
                   <input 
                     required
                     type="tel" 
-                    placeholder="05XX XX XX XX"
+                    placeholder="0776170547"
+                    inputMode="numeric"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
                     className="w-full bg-bg-luxe border border-border-luxe rounded-[10px] px-4 py-4 text-white font-medium focus:outline-none focus:border-accent-luxe transition"
                     value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    onChange={(e) => setForm({ ...form, phone: sanitizePhoneNumber(e.target.value) })}
                   />
                 </div>
                 
