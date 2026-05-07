@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 import { Product, useStore } from '@/store';
 
 export interface AddToCartEvent {
   product: Product;
   startRect: DOMRect;
+  redirectToCart?: boolean;
 }
 
 type ActiveFlight = AddToCartEvent & { id: number };
@@ -15,6 +17,7 @@ type ActiveFlight = AddToCartEvent & { id: number };
 export function AddToCartAnimation() {
   const [events, setEvents] = useState<ActiveFlight[]>([]);
   const { addToCart } = useStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleAddToCart = (rawEvent: Event) => {
@@ -28,6 +31,9 @@ export function AddToCartAnimation() {
 
       window.setTimeout(() => {
         addToCart(event.detail.product);
+        if (event.detail.redirectToCart) {
+          navigate('/cart');
+        }
       }, 520);
 
       window.setTimeout(() => {
@@ -37,7 +43,7 @@ export function AddToCartAnimation() {
 
     window.addEventListener('triggerAddToCartAnimation', handleAddToCart);
     return () => window.removeEventListener('triggerAddToCartAnimation', handleAddToCart);
-  }, [addToCart]);
+  }, [addToCart, navigate]);
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[100]">

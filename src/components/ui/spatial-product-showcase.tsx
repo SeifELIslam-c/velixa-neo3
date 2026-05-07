@@ -145,14 +145,31 @@ const ANIMATIONS = {
   }),
 };
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  return isMobile;
+}
+
 const BackgroundGradient = ({ isLeft }: { isLeft: boolean }) => {
   const shouldReduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const liteMotion = shouldReduceMotion || isMobile;
 
   return (
   <div className="absolute inset-0 pointer-events-none">
     <motion.div
       animate={
-        shouldReduceMotion
+        liteMotion
           ? undefined
           : {
               background: isLeft
@@ -160,7 +177,7 @@ const BackgroundGradient = ({ isLeft }: { isLeft: boolean }) => {
                 : 'radial-gradient(circle at 100% 50%, rgba(255,255,255,0.11), transparent 50%)',
             }
       }
-      transition={shouldReduceMotion ? undefined : { duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      transition={liteMotion ? undefined : { duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
       className="absolute inset-0"
     />
   </div>
@@ -170,36 +187,43 @@ const BackgroundGradient = ({ isLeft }: { isLeft: boolean }) => {
 const ProductVisual = ({ data, isLeft }: { data: ProductData; isLeft: boolean }) => {
   const { t } = useTranslation();
   const shouldReduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const liteMotion = shouldReduceMotion || isMobile;
+  const optimizedImage = data.image.includes('ik.imagekit.io')
+    ? `${data.image}${data.image.includes('?') ? '&' : '?'}tr=w-720,q-74,f-auto`
+    : data.image;
 
   return (
     <motion.div layout="position" className="relative group shrink-0">
       <motion.div
-        animate={shouldReduceMotion ? undefined : { rotate: 360 }}
-        transition={shouldReduceMotion ? undefined : { duration: 24, repeat: Infinity, ease: 'linear' }}
-        className={`absolute inset-[-20%] rounded-full border border-dashed border-white/10 ${data.colors.ring}`}
+        animate={liteMotion ? undefined : { rotate: 360 }}
+        transition={liteMotion ? undefined : { duration: 24, repeat: Infinity, ease: 'linear' }}
+        className={`absolute inset-[-20%] rounded-full border border-dashed border-white/10 ${data.colors.ring} hidden md:block`}
       />
       <motion.div
-        animate={shouldReduceMotion ? undefined : { scale: [1, 1.05, 1] }}
-        transition={shouldReduceMotion ? undefined : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-        className={`absolute inset-0 rounded-full bg-gradient-to-br ${data.colors.gradient} blur-2xl opacity-40`}
+        animate={liteMotion ? undefined : { scale: [1, 1.05, 1] }}
+        transition={liteMotion ? undefined : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        className={`absolute inset-4 rounded-full bg-gradient-to-br ${data.colors.gradient} opacity-20 md:inset-0 md:blur-2xl md:opacity-40`}
       />
 
       <div className="relative h-80 w-80 md:h-[450px] md:w-[450px] rounded-full border border-white/5 shadow-2xl flex items-center justify-center overflow-hidden bg-black/20 backdrop-blur-sm">
         <motion.div
-          animate={shouldReduceMotion ? undefined : { y: [-5, 5, -5] }}
-          transition={shouldReduceMotion ? undefined : { repeat: Infinity, duration: 6, ease: 'easeInOut' }}
+          animate={liteMotion ? undefined : { y: [-5, 5, -5] }}
+          transition={liteMotion ? undefined : { repeat: Infinity, duration: 6, ease: 'easeInOut' }}
           className="relative z-10 w-full h-full flex items-center justify-center p-8"
         >
           <AnimatePresence mode="wait">
             <motion.img
               key={data.id}
-              src={data.image}
+              src={optimizedImage}
               alt={data.title}
               variants={ANIMATIONS.image(isLeft)}
-              initial="initial"
-              animate="animate"
-              exit="exit"
+              initial={liteMotion ? false : 'initial'}
+              animate={liteMotion ? { opacity: 1, scale: 1, rotate: 0, x: 0, filter: 'blur(0px)' } : 'animate'}
+              exit={liteMotion ? undefined : 'exit'}
               className="w-full h-full object-cover rounded-full drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+              loading="lazy"
+              decoding="async"
               draggable={false}
             />
           </AnimatePresence>
@@ -391,15 +415,18 @@ const ModelGalleryPopover = ({ data, align }: ModelGalleryPopoverProps) => {
 
 const ProductDetails = ({ data, isLeft }: { data: ProductData; isLeft: boolean }) => {
   const { t } = useTranslation();
+  const shouldReduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const liteMotion = shouldReduceMotion || isMobile;
   const alignClass = isLeft ? 'items-start text-left' : 'items-end text-right';
   const flexDirClass = isLeft ? 'flex-row' : 'flex-row-reverse';
 
   return (
     <motion.div
-      variants={ANIMATIONS.container}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
+      variants={liteMotion ? undefined : ANIMATIONS.container}
+      initial={liteMotion ? false : 'hidden'}
+      animate={liteMotion ? { opacity: 1 } : 'visible'}
+      exit={liteMotion ? undefined : 'exit'}
       className={`flex flex-col ${alignClass}`}
     >
       <motion.h2 variants={ANIMATIONS.item} className="text-sm font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">
@@ -491,6 +518,8 @@ const Switcher = ({
 export default function SpatialProductShowcase() {
   const [activeSide, setActiveSide] = useState<ProductId>('left');
   const shouldReduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const liteMotion = shouldReduceMotion || isMobile;
 
   const currentData = useMemo(() => PRODUCT_DATA[activeSide], [activeSide]);
   const isLeft = activeSide === 'left';
@@ -501,7 +530,7 @@ export default function SpatialProductShowcase() {
       <div className="relative z-10 w-full px-6 flex flex-col justify-center max-w-7xl mx-auto min-h-[520px] md:min-h-[600px] mt-12 md:mt-0">
         <motion.div
           layout
-          transition={shouldReduceMotion ? { duration: 0.2 } : { type: 'spring', bounce: 0, duration: 0.9 }}
+          transition={liteMotion ? { duration: 0.16 } : { type: 'spring', bounce: 0, duration: 0.9 }}
           className={`flex flex-col md:flex-row items-center justify-center gap-12 md:gap-24 lg:gap-32 w-full pb-8 md:pb-16 ${
             isLeft ? 'md:flex-row' : 'md:flex-row-reverse'
           }`}

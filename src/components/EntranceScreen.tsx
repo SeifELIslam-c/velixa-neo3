@@ -11,16 +11,20 @@ interface EntranceScreenProps {
 
 export function EntranceScreen({ onEnter }: EntranceScreenProps) {
   const [startVisible, setStartVisible] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
   const { setLanguage } = useStore();
   const { i18n, t } = useTranslation();
 
-  const handleLanguageSelect = (lang: string) => {
+  const handleLanguageSelect = async (lang: string) => {
+    if (isEntering) return;
+    setIsEntering(true);
     setLanguage(lang);
-    i18n.changeLanguage(lang);
-    document.getElementById('entrance-container')?.classList.add('opacity-0', 'pointer-events-none');
-    setTimeout(() => {
+
+    try {
+      await i18n.changeLanguage(lang);
+    } finally {
       onEnter();
-    }, 1000);
+    }
   };
   
   useEffect(() => {
@@ -66,12 +70,14 @@ export function EntranceScreen({ onEnter }: EntranceScreenProps) {
         ].map((lang) => (
           <button 
             key={lang.code}
+            type="button"
             onClick={() => handleLanguageSelect(lang.code)}
+            disabled={isEntering}
             className="
               px-12 py-4 bg-transparent border border-white/20 rounded-full
               text-white text-lg tracking-[0.2em] font-bold uppercase backdrop-blur-md
               transition-all duration-300
-              hover:bg-accent-luxe hover:border-transparent hover:scale-110 active:scale-95
+              hover:bg-accent-luxe hover:border-transparent hover:scale-110 active:scale-95 disabled:pointer-events-none disabled:opacity-50
               shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_30px_rgba(239,68,68,0.5)]
             "
           >

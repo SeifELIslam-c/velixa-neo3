@@ -27,12 +27,12 @@ export const ContainerScroll = ({
   }, []);
 
   const scaleDimensions = () => {
-    return isMobile ? [0.92, 1] : [1.04, 1];
+    return isMobile ? [1, 1] : [1.04, 1];
   };
 
-  const rotate = useTransform(scrollYProgress, [0, 0.72], isMobile ? [13, 0] : [10, 0]);
+  const rotate = useTransform(scrollYProgress, [0, 0.72], isMobile ? [0, 0] : [10, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions());
-  const translate = useTransform(scrollYProgress, [0, 0.72], isMobile ? [24, -10] : [0, -28]);
+  const translate = useTransform(scrollYProgress, [0, 0.72], isMobile ? [0, 0] : [0, -28]);
 
   return (
     <div
@@ -42,7 +42,7 @@ export const ContainerScroll = ({
       <div
         className="relative w-full py-8 md:py-20"
         style={{
-          perspective: "1000px",
+          perspective: isMobile ? "none" : "1000px",
         }}
       >
         <div className="md:sticky md:top-12">

@@ -682,6 +682,9 @@ i18n.use(initReactI18next).init({
   resources,
   lng: storedLanguage || "en",
   fallbackLng: "en",
+  react: {
+    useSuspense: false,
+  },
   interpolation: {
     escapeValue: false,
   },

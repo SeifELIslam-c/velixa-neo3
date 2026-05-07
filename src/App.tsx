@@ -9,7 +9,8 @@ import { authApi } from './lib/auth';
 import { subscribeToProducts } from './lib/realtime';
 
 const shouldBypassEntrance = (pathname: string) => pathname !== '/';
-const HomePage = lazy(() => import('./components/HomePage').then((module) => ({ default: module.HomePage })));
+const loadHomePage = () => import('./components/HomePage');
+const HomePage = lazy(() => loadHomePage().then((module) => ({ default: module.HomePage })));
 const CheckoutPage = lazy(() => import('./components/CheckoutPage').then((module) => ({ default: module.CheckoutPage })));
 const AdminPage = lazy(() => import('./components/AdminPage').then((module) => ({ default: module.AdminPage })));
 const AuthPage = lazy(() => import('./components/AuthPage').then((module) => ({ default: module.AuthPage })));
@@ -37,6 +38,8 @@ export default function App() {
     if (typeof window === 'undefined') return;
     if (hasEntered) {
       window.sessionStorage.setItem('velixa-entered', 'true');
+    } else {
+      loadHomePage();
     }
   }, [hasEntered]);
 
@@ -77,7 +80,13 @@ export default function App() {
   };
 
   const renderRoutes = () => (
-    <Suspense fallback={<div className="min-h-screen bg-bg-luxe" />}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-bg-luxe text-white">
+          <div className="h-10 w-10 rounded-full border-2 border-white/15 border-t-white" />
+        </div>
+      }
+    >
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/cart" element={<NewCartWrapper />} />

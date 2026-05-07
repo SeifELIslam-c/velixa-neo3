@@ -76,14 +76,17 @@ export function ProductRevealCard({
   }
 
   const optimizedImage = (() => {
+    const imageKitTransform = isTouchDevice ? "tr=w-720,q-72,f-auto" : "tr=q-100,f-auto"
+    const unsplashTransform = isTouchDevice ? "w=720&q=72&auto=format&fit=max" : "w=1600&q=100&auto=format&fit=max"
+
     if (image.includes("ik.imagekit.io")) {
-      return image.includes("?") ? `${image}&tr=q-100,f-auto` : `${image}?tr=q-100,f-auto`
+      return image.includes("?") ? `${image}&${imageKitTransform}` : `${image}?${imageKitTransform}`
     }
 
     if (image.includes("images.unsplash.com")) {
       return image.includes("?")
-        ? `${image}&w=1600&q=100&auto=format&fit=max`
-        : `${image}?w=1600&q=100&auto=format&fit=max`
+        ? `${image}&${unsplashTransform}`
+        : `${image}?${unsplashTransform}`
     }
 
     return image
@@ -164,12 +167,12 @@ export function ProductRevealCard({
       onClick={handleCardClick}
       variants={containerVariants}
       className={cn(
-        "relative w-full min-w-0 rounded-[20px] border border-border-luxe bg-surface-luxe text-white overflow-hidden shadow-lg cursor-pointer group",
+        "relative w-full min-w-0 rounded-[20px] border border-border-luxe bg-surface-luxe text-white overflow-hidden shadow-lg cursor-pointer group transform-gpu motion-reduce:transform-none",
         className
       )}
       style={{ opacity: 1 }}
     >
-      <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,#060606_0%,#0d0d0d_52%,#080808_100%)] px-3 pb-3 pt-4">
+      <div className="relative overflow-hidden bg-[linear-gradient(180deg,#060606_0%,#0d0d0d_52%,#080808_100%)] px-3 pb-3 pt-4 md:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_34%),linear-gradient(180deg,#060606_0%,#0d0d0d_52%,#080808_100%)]">
         {isTouchDevice ? (
           <div className="pointer-events-none absolute inset-x-3 bottom-3 z-20 flex justify-center md:hidden">
             <div className="max-w-[calc(100%-1rem)] rounded-full border border-white/10 bg-black/65 px-3 py-1.5 text-center text-[9px] font-semibold leading-relaxed tracking-[0.12em] text-white/85 backdrop-blur">
@@ -189,7 +192,7 @@ export function ProductRevealCard({
             draggable={false}
             style={{
               backfaceVisibility: "hidden",
-              willChange: "transform",
+              willChange: shouldAnimate ? "transform" : "auto",
             }}
           />
         </div>
@@ -231,7 +234,7 @@ export function ProductRevealCard({
       <motion.div
         variants={overlayVariants}
         className={cn(
-          "absolute inset-0 bg-[#0a0a0a]/95 backdrop-blur-md flex flex-col justify-end z-30",
+          "absolute inset-0 bg-[#0a0a0a]/95 md:backdrop-blur-md flex flex-col justify-end z-30",
           isRevealed || !isTouchDevice ? "pointer-events-auto" : "pointer-events-none"
         )}
       >
